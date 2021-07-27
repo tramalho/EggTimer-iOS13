@@ -7,15 +7,35 @@
 //
 
 import UIKit
+import AVFoundation
 
 class ViewController: UIViewController {
     
-    private var timer: Timer?
+    @IBOutlet weak var progressBar: UIProgressView!
+    private var timer: Timer = Timer()
+    
+    private lazy var player: AVAudioPlayer = {
+      
+        var player = AVAudioPlayer()
+        
+        if let resource = Bundle.main.url(forResource: "alarm_sound", withExtension: "mp3") {
+            player = try! AVAudioPlayer(contentsOf: resource)
+        }
+       
+        return player
+    }()
+    
+    private var remainingTime = 0
     
     //minutes to second
-    private let hardness = ["Soft": 5 * 60, "Medium": 7 * 60, "Hard": 12 * 60]
+    private let hardness = ["Soft": 3, "Medium": 7, "Hard": 12]
     
 
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        progressBar.progress = 0
+    }
+    
     @IBAction func click(_ sender: UIButton) {
         
         if let title = sender.currentTitle, let counter = hardness[title]{
@@ -24,18 +44,20 @@ class ViewController: UIViewController {
     }
     
     private func timer(counter: Int) {
-        
-        if timer == nil {
-        
-            var period = counter
-            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { Timer in
-                if period > 0 {
-                    print("\(period) seconds")
-                    period -= 1
-                } else {
-                    Timer.invalidate()
-                    self.timer = nil
-                }
+                
+        timer.invalidate()
+        player.stop()
+        progressBar.progress = 0
+        remainingTime = 0
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { Timer in
+            if self.remainingTime <= counter {
+                let progress = Float(self.remainingTime) / Float(counter)
+                self.progressBar.progress = progress
+                print("\(progress) progress")
+                self.remainingTime += 1
+            } else {
+                self.player.play()
+                self.timer.invalidate()
             }
         }
     }
